@@ -13,6 +13,10 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 ) 
 
+@limiter.request_filter
+def ip_whitelist():
+    return request.remote_addr == "127.0.0.1"
+
 # Credentials
 import config
 
@@ -98,6 +102,12 @@ def cyclic_cleanup():
     db.clear()
 
 if __name__ == "__main__":
-    threading.Timer(config.CYCLIC_CLEANUP_INTERVAL, cyclic_cleanup).start()
-    app.run(debug=True)
+
+
+    if not config.LOCAL:
+        from wsgiref.handlers import CGIHandler
+        threading.Timer(config.CYCLIC_CLEANUP_INTERVAL, cyclic_cleanup).start()
+        CGIHandler().run(app)
+    else:
+        app.run(debug=True)
     
