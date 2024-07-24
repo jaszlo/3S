@@ -1,0 +1,6 @@
+duckdb==0.10.0
+Flask==3.0.2
+Flask-BasicAuth==0.2.0
+Flask-Limiter==3.8.0
+fonttools==4.51.0
+Jinja2==3.1.3

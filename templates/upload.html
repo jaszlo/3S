@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload File</title>
+    <style>
+        .upload-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .upload-box {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .upload-box.drag-over {
+            border-color: #000;
+        }
+        .hidden-input {
+            display: none;
+        }
+        .button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .info-text {
+            position: absolute;
+            bottom: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        .url-container {
+            display: flex;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .url-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .copy-button {
+            margin-left: 10px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 5px;
+        }
+        .copy-button:hover {
+            background-color: #218838;
+        }
+        .open-button {
+            margin-left: 10px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #3366ff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 5px;
+        }
+        .open-button:hover {
+            background-color: #0039e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <div class="upload-box" id="upload-box">
+            <p>Drag and drop files here</p>
+            <p>or</p>
+            <button class="button" onclick="document.getElementById('file-input').click();">Choose File</button>
+            <form id="upload-form" action="/upload" method="POST" enctype="multipart/form-data">
+                <input id="file-input" class="hidden-input" type="file" name="file" onchange="handleFileSelect(this.files)">
+            </form>
+            <div class="info-text">You can also paste an image</div>
+        </div>
+        <div class="url-container" id="url-container" style="display: none;">
+            <input type="text" class="url-input" id="image-url" readonly>
+            <button class="copy-button" onclick="copyUrl()">Copy URL</button>
+            <button class="open-button" onclick="openUrl()">Open URL</button>
+        </div>
+    </div>
+
+    <script>
+        const uploadBox = document.getElementById('upload-box');
+        const uploadForm = document.getElementById('upload-form');
+        const urlContainer = document.getElementById('url-container');
+        const imageUrlInput = document.getElementById('image-url');
+
+        uploadBox.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            uploadBox.classList.add('drag-over');
+        });
+
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('drag-over');
+        });
+
+        uploadBox.addEventListener('drop', (event) => {
+            event.preventDefault();
+            uploadBox.classList.remove('drag-over');
+            const files = event.dataTransfer.files;
+            handleFileSelect(files);
+        });
+
+        uploadBox.addEventListener('paste', (event) => {
+            const items = event.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].kind === 'file') {
+                    const file = items[i].getAsFile();
+                    handleFileSelect([file]);
+                }
+            }
+        });
+
+        function handleFileSelect(files) {
+            if (files.length > 0) {
+                const file = files[0];
+                uploadFile(file);
+            }
+        }
+
+        async function uploadFile(file) {
+            const username = prompt('Enter username:');
+            const password = prompt('Enter password:');
+            const credentials = btoa(username + ':' + password);
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + credentials
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const imageUrl = `${window.location.origin}/i/${data.id}`;
+                    imageUrlInput.value = imageUrl;
+                    urlContainer.style.display = 'flex';
+                    imageUrlInput.select();
+                } else {
+                    alert('Failed to upload file. Status: ' + response.status);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function copyUrl() {
+            imageUrlInput.select();
+            document.execCommand('copy');
+        }
+
+        function openUrl() {
+            const imageUrl = imageUrlInput.value;
+            window.open(imageUrl, '_blank').focus();
+        }
+    </script>
+</body>
+</html>
